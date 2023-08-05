@@ -8,7 +8,10 @@ import Bottombar from '@/components/shared/Bottombar';
 
 export const metadata: Metadata = {
 	title: 'Threads',
-	description: 'A Next.js 13 Meta Threads Application'
+	description: 'A Next.js 13 Meta Threads Application',
+	icons: {
+		icon: '/logo.svg'
+	}
 };
 
 const inter = Inter({ subsets: ['latin'] });
@@ -17,12 +20,14 @@ const RootLayout = ({ children }: { children: React.ReactNode }) => {
 	return (
 		<ClerkProvider>
 			<html lang="es">
-				<body className={`${inter.className} bg-dark-1`}>
+				<body className={inter.className}>
 					<Topbar />
-					<main>
+					<main className='flex flex-row'>
 						<LeftSidebar />
 						<section className="main-container">
-							<div className="w-full max-w-4xl">{children}</div>
+							<div className="w-full max-w-4xl">
+								{children}
+							</div>
 						</section>
 						<RightSidebar />
 					</main>
