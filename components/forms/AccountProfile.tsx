@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import { useForm } from 'react-hook-form';
+import { usePathname, useRouter } from 'next/navigation';
 import { ChangeEvent, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -20,6 +21,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { isBase64Image } from '@/lib/utils';
 import { useUploadThing } from '@/lib/uploadthing';
+import { updateUser } from '@/lib/actions/user.actions';
 
 interface Props {
 	user: {
@@ -34,35 +36,40 @@ interface Props {
 }
 
 export const AccountProfile = ({ user, btnTitle }: Props) => {
-	const [files, setFiles] = useState<File[]>([])
+	const [files, setFiles] = useState<File[]>([]);
 	const { startUpload } = useUploadThing('media');
+	const router = useRouter();
+	const pathname = usePathname();
 
 	const form = useForm({
 		resolver: zodResolver(UserValidation),
 		defaultValues: {
 			profile_photo: user?.image || '',
-			name:  user?.name || '',
-			username:  user?.username || '',
-			bio:  user?.bio || ''
+			name: user?.name || '',
+			username: user?.username || '',
+			bio: user?.bio || ''
 		}
 	});
 
-	const handleImage = (e: ChangeEvent<HTMLInputElement>, fieldChange: (values: string) => void) => {
+	const handleImage = (
+		e: ChangeEvent<HTMLInputElement>,
+		fieldChange: (values: string) => void
+	) => {
 		e.preventDefault();
-   
+
 		const fileReader = new FileReader();
 
 		if (e.target.files && e.target.files.length > 0) {
 			const file = e.target.files[0];
-			
+
 			setFiles(Array.from(e.target.files));
-			
+
 			if (!file.type.includes('image')) return;
 
-			fileReader.onload = async (event) => {
+			fileReader.onload = async event => {
 				const imageDataUrl = event.target?.result?.toString() || '';
 				fieldChange(imageDataUrl);
-			}
+			};
 			fileReader.readAsDataURL(file);
 		}
 	};
@@ -78,7 +85,20 @@ export const AccountProfile = ({ user, btnTitle }: Props) => {
 			}
 		}
 
-		// TODO: Update user profile
+		await updateUser({
+			userId: user.id,
+			username: values.username,
+			name: values.name,
+			bio: values.bio,
+			image: values.profile_photo,
+			path: pathname
+		});
+
+		if (pathname === '/profile/edit') {
+			router.back();
+		} else {
+			router.push('/');
+		}
 	};
 
 	return (
@@ -118,7 +138,9 @@ export const AccountProfile = ({ user, btnTitle }: Props) => {
 									accept="image/*"
 									placeholder="Add profile photo"
 									className="account-form_image-input"
-									onChange={e => handleImage(e, field.onChange)}
+									onChange={e =>
+										handleImage(e, field.onChange)
+									}
 								/>
 							</FormControl>
 						</FormItem>
@@ -185,7 +207,7 @@ export const AccountProfile = ({ user, btnTitle }: Props) => {
 					)}
 				/>
 
-				<Button type="submit" className='bg-primary-500'>
+				<Button type="submit" className="bg-primary-500">
 					{btnTitle}
 				</Button>
 			</form>
