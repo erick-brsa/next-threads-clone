@@ -31,3 +31,72 @@ export const createThread = async ({ text, author, communityId, path }: Params) 
         throw new Error(`Error creating thread: ${error.message}`);
     }
 };
+
+
+export const fetchPosts = async (pageNumber = 1, pageSize = 20) => {
+	connectToDB();
+
+	// Calculate the number of posts to skip
+	const skipAmount = (pageNumber - 1) * pageSize
+
+	// Fetch posts that have no parents (top-level threads...)
+	const postsQuery = Thread
+		.find({ parentId: { $in: [null, undefined] } })
+		.sort({ createdAt: 'desc' })
+		.skip(skipAmount)
+		.limit(pageSize)
+		.populate({ path: 'author', model: User })
+		.populate({ 
+			path: 'children',
+			populate: {
+				path: 'author',
+				model: User,
+				select: '_id name parentId image'
+			}
+		});
+	
+	const totalPostsCount = await Thread.countDocuments({ parentId: { $in:[null, undefined] } });
+	
+	const posts = await postsQuery.exec();
+	const isNext = totalPostsCount > skipAmount + posts.length;
+
+	return { posts, isNext };
+};
+
+
+export const fetchThreadById = async (id: string) => {
+	connectToDB();
+
+	try {
+		// TODO: Populate Community
+		const thread = Thread.findById(id)
+			.populate({
+				path: 'author',
+				model: User,
+				select: '_id id name image'
+			})
+			.populate({
+				path: 'children',
+				populate: [
+					{
+						path: 'author',
+						model: User,
+						select: '_id id name image'
+					},
+					{
+						path: 'children',
+						model: Thread,
+						populate: {
+							path: 'author',
+							model: User,
+							select: '_id id name image'
+						},
+					}
+				]
+			}).exec();
+
+			return thread;
+	} catch (error: any) {
+		throw new Error(`Error fetching the thread: ${error.message}`);
+	}
+};

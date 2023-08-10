@@ -6,7 +6,3 @@ export const ThreadValidation = z.object({
     }),
     accountId: z.string()
 });
-
-// export const CommentValidation = z.object({
-
-// })
