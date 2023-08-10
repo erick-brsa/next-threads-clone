@@ -1,8 +1,9 @@
 'use client'
 
+import Image from 'next/image';
 import { useForm } from 'react-hook-form';
-import { usePathname, useRouter } from 'next/navigation';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { usePathname, useRouter } from 'next/navigation';
 import * as z from 'zod';
 
 import {
@@ -13,10 +14,10 @@ import {
 	FormLabel,
 	FormMessage
 } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components//ui/textarea';
-import { ThreadValidation } from '@/lib/validations/thread';
-import { createThread } from '@/lib/actions/thread.actions';
+import { CommentValidation } from '@/lib/validations/thread';
+import { addCommentToThread } from '@/lib/actions/thread.actions';
 
 interface Props {
 	threadId: string;
@@ -29,20 +30,21 @@ export const Comment = ({ threadId, currentUserImg, currentUserId }: Props) => {
     const pathname = usePathname();
 
     const form = useForm({
-		resolver: zodResolver(ThreadValidation),
+		resolver: zodResolver(CommentValidation),
 		defaultValues: {
 			thread: '',
-			accountId: currentUserId
 		}
 	});
 
-	const onSubmit = async (values: z.infer<typeof ThreadValidation>) => {
-		await createThread({
-			text: values.thread,
-			author: values.accountId,
-			communityId: null,
-			path: pathname
-		});
+	const onSubmit = async (values: z.infer<typeof CommentValidation>) => {
+		await addCommentToThread(
+			threadId,
+			values.thread,
+			JSON.parse(currentUserId),
+			pathname
+		);
+
+		form.reset();
 
 		router.push('/');
 	};
@@ -51,30 +53,37 @@ export const Comment = ({ threadId, currentUserImg, currentUserId }: Props) => {
 	return (
         <Form {...form}>
 			<form
-				className="flex flex-col justify-start gap-10 mt-10"
+				className="comment-form"
 				onSubmit={form.handleSubmit(onSubmit)}
 			>
 				<FormField
 					control={form.control}
 					name="thread"
 					render={({ field }) => (
-						<FormItem className="flex w-full flex-col gap-3">
+						<FormItem className="flex w-full items-center gap-3">
 							<FormLabel className="text-base-semibold text-light-2">
-								Content
-							</FormLabel>
-							<FormControl>
-								<Textarea
-									rows={15}
-									className="no-focus border border-black-4 bg-dark-3 text-light-2"
-									{...field}
+								<Image
+									src={currentUserImg}
+									alt='Profile image'
+									width={48}
+									height={48}
+									className="rounded-full object-cover"
 								/>
+							</FormLabel>
+							<FormControl className='border-none bg-transparent'>
+                                <Input
+                                    type='text'
+									{...field}
+                                    placeholder='Comment...'
+                                    className='no-focus text-light-1 outline-none'
+                                />
 							</FormControl>
 							<FormMessage />
 						</FormItem>
 					)}
 				/>
-				<Button type="submit" className="bg-primary-500">
-					Post Thread
+				<Button type="submit" className="comment-form_btn">
+					Reply
 				</Button>
 			</form>
 		</Form>
